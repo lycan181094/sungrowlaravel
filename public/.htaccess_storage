@@ -1,0 +1,9 @@
+# Redirección para acceder a storage desde public
+# Agregar estas líneas al .htaccess principal
+
+# Redirigir /storage/* a /storage/app/public/*
+RewriteEngine On
+RewriteRule ^storage/(.*)$ storage/app/public/$1 [L]
+
+# O alternativamente, crear una redirección directa
+# RewriteRule ^storage/(.*)$ ../storage/app/public/$1 [L]
