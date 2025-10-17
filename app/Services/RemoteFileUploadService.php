@@ -421,8 +421,12 @@ class RemoteFileUploadService
             // Store file in storage/app/public/images/
             $path = $file->storeAs('public/images', $filename);
             
-            // Generate public URL
-            $url = Storage::url($path);
+            // Generate public URL using the correct base URL
+            $baseUrl = config('app.url');
+            $url = $baseUrl . '/storage/images/' . $filename;
+            
+            // Copy file to public/storage for web access using the stored file
+            $this->copyToPublicStorage($path, $filename);
             
             return [
                 'success' => true,
@@ -435,6 +439,32 @@ class RemoteFileUploadService
                 'success' => false,
                 'error' => $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * Copy file to public/storage directory for web access
+     */
+    protected function copyToPublicStorage($storedPath, $filename)
+    {
+        try {
+            // Ensure public/storage/images directory exists
+            $publicImagesDir = public_path('storage/images');
+            if (!file_exists($publicImagesDir)) {
+                mkdir($publicImagesDir, 0755, true);
+            }
+            
+            // Get the full path to the stored file
+            $sourcePath = storage_path('app/' . $storedPath);
+            $destinationPath = $publicImagesDir . '/' . $filename;
+            
+            // Copy the file from storage to public directory
+            if (file_exists($sourcePath)) {
+                copy($sourcePath, $destinationPath);
+            }
+            
+        } catch (\Exception $e) {
+            \Log::warning('Failed to copy file to public storage: ' . $e->getMessage());
         }
     }
 

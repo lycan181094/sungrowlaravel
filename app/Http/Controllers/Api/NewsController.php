@@ -55,6 +55,31 @@ class NewsController extends Controller
     }
 
     /**
+     * Top 10 visibles (display = true)
+     */
+    public function top10Public(Request $request): JsonResponse
+    {
+        try {
+            $news = News::with('user')
+                ->where('display', true)
+                ->orderBy('fecha_hora', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $news
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener Top 10 públicas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request): JsonResponse

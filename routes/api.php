@@ -29,6 +29,8 @@ Route::post('/mail', [MailController::class, 'send']);
 // Noticias públicas (listar y ver) - Throttling más permisivo
 Route::get('news', [NewsController::class, 'index'])->middleware('throttle:300,1');
 Route::get('news/{id}', [NewsController::class, 'show'])->middleware('throttle:300,1');
+// Top 10 públicas (display = true)
+Route::get('news-top10', [NewsController::class, 'top10Public'])->middleware('throttle:300,1');
 
 // Rutas protegidas por autenticación
 Route::middleware('auth:sanctum')->group(function () {
