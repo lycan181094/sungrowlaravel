@@ -1,46 +1,31 @@
 <?php
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     public function up(): void
     {
         Schema::rename('tablets', 'news');
 
-        // Backfill para no romper el NOT NULL
-        DB::table('news')->whereNull('fecha_hora')
-            ->update(['fecha_hora' => DB::raw('CURRENT_TIMESTAMP')]);
-        DB::table('news')->whereNull('created_at')
-            ->update(['created_at' => DB::raw('CURRENT_TIMESTAMP')]);
+        // Backfill para evitar NOT NULL con valores nulos
+        DB::table('news')->whereNull('fecha_hora')->update(['fecha_hora' => DB::raw('CURRENT_TIMESTAMP')]);
+        DB::table('news')->whereNull('created_at')->update(['created_at' => DB::raw('CURRENT_TIMESTAMP')]);
 
-        Schema::table('news', function (Blueprint $table) {
-            $table->timestamp('fecha_hora')
-                  ->useCurrent()        // DEFAULT CURRENT_TIMESTAMP
-                  ->nullable(false)
-                  ->change();
-
-            // Solo si de verdad necesitas NOT NULL en created_at:
-            $table->timestamp('created_at')
-                  ->useCurrent()        // DEFAULT CURRENT_TIMESTAMP
-                  ->nullable(false)
-                  ->change();
-
-            // Si vas a tocar updated_at también:
-            // $table->timestamp('updated_at')
-            //       ->useCurrent()->useCurrentOnUpdate()
-            //       ->nullable(false)->change();
-        });
+        // Alter con SQL (sin DBAL)
+        DB::statement("ALTER TABLE `news` 
+            MODIFY `fecha_hora` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            MODIFY `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP");
+        // Si no quieres tocar created_at, quita esa segunda línea.
     }
 
     public function down(): void
     {
-        Schema::table('news', function (Blueprint $table) {
-            $table->timestamp('fecha_hora')->nullable()->default(null)->change();
-            $table->timestamp('created_at')->nullable()->default(null)->change();
-            // $table->timestamp('updated_at')->nullable()->default(null)->change();
-        });
+        DB::statement("ALTER TABLE `news` 
+            MODIFY `fecha_hora` TIMESTAMP NULL DEFAULT NULL,
+            MODIFY `created_at` TIMESTAMP NULL DEFAULT NULL");
+
         Schema::rename('news', 'tablets');
     }
 };
