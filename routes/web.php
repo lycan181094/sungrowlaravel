@@ -16,7 +16,7 @@ use App\Http\Controllers\StorageController;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    abort(404);
 });
 
 // Ruta para servir imágenes desde servidor remoto (pública)
