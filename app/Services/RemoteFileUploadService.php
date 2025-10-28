@@ -469,6 +469,54 @@ class RemoteFileUploadService
     }
 
     /**
+     * Delete file from remote server
+     */
+    public function deleteFile($fileUrl)
+    {
+        try {
+            // Si la URL contiene '/storage/', es un archivo local
+            if (strpos($fileUrl, '/storage/') !== false) {
+                $path = parse_url($fileUrl, PHP_URL_PATH);
+                $storagePath = ltrim($path, '/');
+                $fullPath = storage_path('app/public/' . str_replace('storage/', '', $storagePath));
+                
+                if (file_exists($fullPath)) {
+                    unlink($fullPath);
+                }
+                
+                // También eliminar de public/storage si existe
+                $publicPath = public_path($storagePath);
+                if (file_exists($publicPath)) {
+                    unlink($publicPath);
+                }
+                
+                return true;
+            } else {
+                // Para archivos remotos, intentar eliminarlos vía HTTP API
+                if ($this->uploadMethod === 'http' && !empty($this->remoteServerUrl)) {
+                    $response = Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $this->remoteApiKey,
+                        'Accept' => 'application/json'
+                    ])->post($this->remoteServerUrl . '/delete.php', [
+                        'file_url' => $fileUrl
+                    ]);
+                    
+                    return $response->successful();
+                }
+                
+                // Para FTP, no podemos eliminar archivos remotos fácilmente
+                // Solo loguear que se intentó eliminar
+                \Log::info('Cannot delete remote FTP file: ' . $fileUrl);
+                return true; // Asumir éxito para no bloquear la operación
+            }
+            
+        } catch (\Exception $e) {
+            \Log::warning('Error deleting file: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Alternative method: Upload via SFTP (if available)
      */
     public function uploadViaSFTP($file, $filename)

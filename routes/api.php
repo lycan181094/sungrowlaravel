@@ -42,6 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // CRUD protegido (crear, actualizar, eliminar)
     Route::post('news', [NewsController::class, 'store']);
     Route::put('news/{id}', [NewsController::class, 'update']);
+    Route::post('news/{id}/update-with-image', [NewsController::class, 'updateWithImage']);
     Route::delete('news/{id}', [NewsController::class, 'destroy']);
     
     // Gestión de borrado lógico

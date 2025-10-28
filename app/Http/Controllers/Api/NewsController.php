@@ -169,6 +169,105 @@ class NewsController extends Controller
     }
 
     /**
+     * Update news with new image
+     */
+    public function updateWithImage(Request $request, string $id): JsonResponse
+    {
+        $news = News::find($id);
+
+        if (!$news) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Noticia no encontrada'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|image|mimes:jpg,jpeg,png,gif|max:5120',
+            'filename' => 'required|string|max:255',
+            'titulo' => 'required|string|max:255',
+            'sub_titulo' => 'required|string|max:255'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Usar transacción para asegurar consistencia
+            return DB::transaction(function () use ($request, $news) {
+                // 1. Guardar la URL de la imagen anterior para eliminarla después
+                $oldImageUrl = $news->ruta;
+                
+                // 2. Upload new file to remote server
+                $file = $request->file('file');
+                $filename = $request->input('filename');
+                
+                $uploadResult = $this->fileUploadService->uploadFile($file, $filename);
+
+                if (!$uploadResult['success']) {
+                    throw new \Exception('Error al subir archivo: ' . $uploadResult['error']);
+                }
+
+                // 3. Generate new unique slug if title changed
+                $newSlug = $this->generateUniqueSlug($request->input('titulo'));
+                
+                // 4. Update news with new data
+                $newsData = [
+                    'titulo' => $request->input('titulo'),
+                    'sub_titulo' => $request->input('sub_titulo'),
+                    'ruta' => $uploadResult['url'], // Nueva URL del archivo
+                    'slug' => $newSlug,
+                    'link_final' => route('images.show', $newSlug),
+                    'display' => $request->input('display', $news->display) // Mantener el valor actual si no se envía
+                ];
+
+                $news->update($newsData);
+                $news->load('user');
+
+                // 5. Delete old image file if it exists and is different
+                if ($oldImageUrl && $oldImageUrl !== $uploadResult['url']) {
+                    $this->deleteImageFile($oldImageUrl);
+                }
+
+                // 6. Return success response
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Noticia actualizada con nueva imagen exitosamente',
+                    'data' => $news
+                ]);
+            });
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Manejar errores de integridad de base de datos
+            if ($e->getCode() == 23000) { // Integrity constraint violation
+                if (strpos($e->getMessage(), 'news_slug_unique') !== false) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Ya existe una noticia con un título similar. Intenta con un título diferente.',
+                        'error_type' => 'duplicate_slug'
+                    ], 409); // Conflict
+                }
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de base de datos: ' . $e->getMessage()
+            ], 500);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(string $id): JsonResponse
@@ -494,6 +593,31 @@ class NewsController extends Controller
         }
 
         return $slug;
+    }
+
+    /**
+     * Delete image file from remote server
+     */
+    private function deleteImageFile($imageUrl)
+    {
+        try {
+            // Si la URL contiene '/storage/', es un archivo local
+            if (strpos($imageUrl, '/storage/') !== false) {
+                $path = parse_url($imageUrl, PHP_URL_PATH);
+                $storagePath = ltrim($path, '/');
+                $fullPath = storage_path('app/public/' . str_replace('storage/', '', $storagePath));
+                
+                if (file_exists($fullPath)) {
+                    unlink($fullPath);
+                }
+            } else {
+                // Si es una URL remota, intentar eliminarla usando el servicio de archivos
+                $this->fileUploadService->deleteFile($imageUrl);
+            }
+        } catch (\Exception $e) {
+            // Log el error pero no fallar la operación principal
+            \Log::warning('Error al eliminar imagen anterior: ' . $e->getMessage());
+        }
     }
 
     /**
