@@ -86,7 +86,8 @@ class NewsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'titulo' => 'required|string|max:255',
-            'sub_titulo' => 'required|string|max:255'
+            'sub_titulo' => 'required|string|max:255',
+            'time_slider' => 'nullable|integer|min:1|max:60'
         ]);
 
         if ($validator->fails()) {
@@ -100,6 +101,8 @@ class NewsController extends Controller
         // Asignar automáticamente el user_id del usuario autenticado
         $newsData = $request->all();
         $newsData['user_id'] = $request->user()->id;
+        // Asegurar que time_slider se establezca explícitamente (default 5)
+        $newsData['time_slider'] = (int) $request->input('time_slider', 5);
 
         $news = News::create($newsData);
         $news->load('user');
@@ -147,7 +150,8 @@ class NewsController extends Controller
 
         $validator = Validator::make($request->all(), [
             'titulo' => 'sometimes|required|string|max:255',
-            'sub_titulo' => 'sometimes|required|string|max:255'
+            'sub_titulo' => 'sometimes|required|string|max:255',
+            'time_slider' => 'nullable|integer|min:1|max:60'
         ]);
 
         if ($validator->fails()) {
@@ -186,7 +190,8 @@ class NewsController extends Controller
             'file' => 'required|file|image|mimes:jpg,jpeg,png,gif|max:5120',
             'filename' => 'required|string|max:255',
             'titulo' => 'required|string|max:255',
-            'sub_titulo' => 'required|string|max:255'
+            'sub_titulo' => 'required|string|max:255',
+            'time_slider' => 'nullable|integer|min:1|max:60'
         ]);
 
         if ($validator->fails()) {
@@ -223,7 +228,8 @@ class NewsController extends Controller
                     'ruta' => $uploadResult['url'], // Nueva URL del archivo
                     'slug' => $newSlug,
                     'link_final' => route('images.show', $newSlug),
-                    'display' => $request->input('display', $news->display) // Mantener el valor actual si no se envía
+                    'display' => $request->input('display', $news->display), // Mantener el valor actual si no se envía
+                    'time_slider' => $request->input('time_slider', $news->time_slider ?? 5) // Mantener el valor actual o usar 5 por defecto
                 ];
 
                 $news->update($newsData);
@@ -404,7 +410,8 @@ class NewsController extends Controller
             'file' => 'required|file|image|mimes:jpg,jpeg,png,gif|max:5120',
             'filename' => 'required|string|max:255',
             'titulo' => 'required|string|max:255',
-            'sub_titulo' => 'required|string|max:255'
+            'sub_titulo' => 'required|string|max:255',
+            'time_slider' => 'nullable|integer|min:1|max:60'
         ]);
 
         if ($validator->fails()) {
@@ -440,7 +447,8 @@ class NewsController extends Controller
                     'slug' => $slug,
                     'fecha_hora' => now(),
                     'link_final' => route('images.show', $slug),
-                    'display' => $request->input('display', true) // Por defecto true, pero se puede enviar desde el frontend
+                    'display' => $request->input('display', true), // Por defecto true, pero se puede enviar desde el frontend
+                    'time_slider' => (int) $request->input('time_slider', 5)
                 ];
 
                 $news = News::create($newsData);
@@ -488,7 +496,8 @@ class NewsController extends Controller
             'file' => 'required|string', // base64 string
             'filename' => 'required|string|max:255',
             'titulo' => 'required|string|max:255',
-            'sub_titulo' => 'required|string|max:255'
+            'sub_titulo' => 'required|string|max:255',
+            'time_slider' => 'nullable|integer|min:1|max:60'
         ]);
 
         if ($validator->fails()) {
@@ -524,7 +533,8 @@ class NewsController extends Controller
                     'slug' => $slug,
                     'fecha_hora' => now(),
                     'link_final' => route('images.show', $slug),
-                    'display' => $request->input('display', true) // Por defecto true, pero se puede enviar desde el frontend
+                    'display' => $request->input('display', true), // Por defecto true, pero se puede enviar desde el frontend
+                    'time_slider' => $request->input('time_slider', 5) // Por defecto 5 segundos
                 ];
 
                 $news = News::create($newsData);
