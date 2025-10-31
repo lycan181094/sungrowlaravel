@@ -87,7 +87,8 @@ class NewsController extends Controller
         $validator = Validator::make($request->all(), [
             'titulo' => 'required|string|max:255',
             'sub_titulo' => 'required|string|max:255',
-            'time_slider' => 'nullable|integer|min:1|max:60'
+            'time_slider' => 'nullable|integer|min:1|max:60',
+            'show_title_top10' => 'nullable|boolean'
         ]);
 
         if ($validator->fails()) {
@@ -103,6 +104,7 @@ class NewsController extends Controller
         $newsData['user_id'] = $request->user()->id;
         // Asegurar que time_slider se establezca explícitamente (default 5)
         $newsData['time_slider'] = (int) $request->input('time_slider', 5);
+        $newsData['show_title_top10'] = filter_var($request->input('show_title_top10', true), FILTER_VALIDATE_BOOLEAN);
 
         $news = News::create($newsData);
         $news->load('user');
@@ -151,7 +153,8 @@ class NewsController extends Controller
         $validator = Validator::make($request->all(), [
             'titulo' => 'sometimes|required|string|max:255',
             'sub_titulo' => 'sometimes|required|string|max:255',
-            'time_slider' => 'nullable|integer|min:1|max:60'
+            'time_slider' => 'nullable|integer|min:1|max:60',
+            'show_title_top10' => 'nullable|boolean'
         ]);
 
         if ($validator->fails()) {
@@ -191,7 +194,8 @@ class NewsController extends Controller
             'filename' => 'required|string|max:255',
             'titulo' => 'required|string|max:255',
             'sub_titulo' => 'required|string|max:255',
-            'time_slider' => 'nullable|integer|min:1|max:60'
+            'time_slider' => 'nullable|integer|min:1|max:60',
+            'show_title_top10' => 'nullable|boolean'
         ]);
 
         if ($validator->fails()) {
@@ -411,7 +415,8 @@ class NewsController extends Controller
             'filename' => 'required|string|max:255',
             'titulo' => 'required|string|max:255',
             'sub_titulo' => 'required|string|max:255',
-            'time_slider' => 'nullable|integer|min:1|max:60'
+            'time_slider' => 'nullable|integer|min:1|max:60',
+            'show_title_top10' => 'nullable|boolean'
         ]);
 
         if ($validator->fails()) {
@@ -448,7 +453,8 @@ class NewsController extends Controller
                     'fecha_hora' => now(),
                     'link_final' => route('images.show', $slug),
                     'display' => $request->input('display', true), // Por defecto true, pero se puede enviar desde el frontend
-                    'time_slider' => (int) $request->input('time_slider', 5)
+                    'time_slider' => (int) $request->input('time_slider', 5),
+                    'show_title_top10' => filter_var($request->input('show_title_top10', true), FILTER_VALIDATE_BOOLEAN)
                 ];
 
                 $news = News::create($newsData);
@@ -534,7 +540,8 @@ class NewsController extends Controller
                     'fecha_hora' => now(),
                     'link_final' => route('images.show', $slug),
                     'display' => $request->input('display', true), // Por defecto true, pero se puede enviar desde el frontend
-                    'time_slider' => $request->input('time_slider', 5) // Por defecto 5 segundos
+                    'time_slider' => $request->input('time_slider', 5), // Por defecto 5 segundos
+                    'show_title_top10' => filter_var($request->input('show_title_top10', true), FILTER_VALIDATE_BOOLEAN)
                 ];
 
                 $news = News::create($newsData);

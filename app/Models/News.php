@@ -21,7 +21,8 @@ class News extends Model
         'user_id',
         'slug',
         'display',
-        'time_slider'
+        'time_slider',
+        'show_title_top10'
     ];
 
     protected $casts = [
@@ -30,7 +31,8 @@ class News extends Model
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
         'display' => 'boolean',
-        'time_slider' => 'integer'
+        'time_slider' => 'integer',
+        'show_title_top10' => 'boolean'
     ];
 
     // Relación con User
